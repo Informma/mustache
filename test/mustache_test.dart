@@ -792,6 +792,55 @@ void main() {
       expect(parse(template).renderString(values), equals(output));
     });
   });
+
+  group('Lambda context extended', () {
+    test('LambdaContext run lambda', () {
+      var level = 0;
+      var template = '<{{#markdown}}{{content}}{{/markdown}}>';
+      var values = {
+        'markdown': (ctx) {
+          level++;
+        }
+      };
+      parse(template).renderString(values);
+      expect(level, equals(1));
+    });
+
+    test('LambdaContext run lambda and onleave', () {
+      var level = 0;
+      var onLeave = (){
+        level--;
+      };
+      var template = '<{{#markdown}}{{content}}{{/markdown}}>';
+      var values = {
+        'markdown': (LambdaContext ctx) {
+          level++;
+          ctx.onLeave = onLeave;
+        }
+      };
+      parse(template).renderString(values);
+      expect(level, equals(0));
+    });
+
+    test('Section Lambda with identity and LambdaTerminationResult', (){
+      var t = Template('{{#links.other name}}{{name}}\n{{/links.other name}}', lenient: true);
+      var ctx = {
+        "links": (LambdaContext ctx){
+          return LambdaTerminationResult(
+            [
+              { "name": "resque" },
+              { "name": "hub" },
+              { "name": ctx.name.split('.').last }
+            ]
+          );
+        },
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals("resque\nhub\nother name\n"));
+    });
+
+
+  });
 }
 
 dynamic renderFail(source, values) {

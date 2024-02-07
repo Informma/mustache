@@ -1,5 +1,7 @@
 import 'src/template.dart' as t;
 
+export 'src/lambda_result.dart';
+
 /// A Template can be efficiently rendered multiple times with different
 /// values.
 abstract class Template {
@@ -61,6 +63,9 @@ abstract class LambdaContext {
 
   /// Get the name of the node
   String get name;
+
+  /// Adds an onLeave function to a section node
+  set onLeave(Function onLeave);
 }
 
 /// [TemplateException] is used to obtain the line and column numbers

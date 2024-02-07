@@ -55,7 +55,7 @@ class Parser {
     _tokens = _scanner.scan();
     _currentDelimiters = _delimiters;
     _stack.clear();
-    _stack.add(SectionNode('root', 0, 0, _delimiters));
+    _stack.add(SectionNode('root', 0, 0, _delimiters, null));
 
     // Handle a standalone tag on first line, including special case where the
     // first line is empty.
@@ -73,7 +73,7 @@ class Parser {
 
         case TokenType.openDelimiter:
           var tag = _readTag();
-          var node = _createNodeFromTag(tag);
+          var node = _createNodeFromTag(tag, _stack.last);
           if (tag != null) _appendTag(tag, node);
           break;
 
@@ -141,10 +141,10 @@ class Parser {
         .contains(token.type));
     var children = _stack.last.children;
     if (children.isEmpty || children.last is! TextNode) {
-      children.add(TextNode(token.value, token.start, token.end));
+      children.add(TextNode(token.value, token.start, token.end, _stack.last));
     } else {
       var last = children.removeLast() as TextNode;
-      var node = TextNode(last.text + token.value, last.start, token.end);
+      var node = TextNode(last.text + token.value, last.start, token.end, _stack.last);
       children.add(node);
     }
   }
@@ -216,7 +216,7 @@ class Parser {
       var precedingWhitespace = _readIf(TokenType.whitespace, eofOk: true);
       var indent = precedingWhitespace == null ? '' : precedingWhitespace.value;
       var tag = _readTag();
-      var tagNode = _createNodeFromTag(tag, partialIndent: indent);
+      var tagNode = _createNodeFromTag(tag, _stack.last, partialIndent: indent);
       var followingWhitespace = _readIf(TokenType.whitespace, eofOk: true);
 
       const standaloneTypes = [
@@ -331,7 +331,7 @@ class Parser {
     return Tag(tagType, name, open.start, close.end);
   }
 
-  Node _createNodeFromTag(Tag tag, {String partialIndent = ''}) {
+  Node _createNodeFromTag(Tag tag, Node parentNode, {String partialIndent = ''}) {
     // Handle EOF case.
     if (tag == null) {
       return null;
@@ -342,7 +342,7 @@ class Parser {
       case TagType.openSection:
       case TagType.openInverseSection:
         var inverse = tag.type == TagType.openInverseSection;
-        node = SectionNode(tag.name, tag.start, tag.end, _currentDelimiters,
+        node = SectionNode(tag.name, tag.start, tag.end, _currentDelimiters, parentNode,
             inverse: inverse);
         break;
 
@@ -350,11 +350,11 @@ class Parser {
       case TagType.unescapedVariable:
       case TagType.tripleMustache:
         var escape = tag.type == TagType.variable;
-        node = VariableNode(tag.name, tag.start, tag.end, escape: escape);
+        node = VariableNode(tag.name, tag.start, tag.end, parentNode, escape: escape);
         break;
 
       case TagType.partial:
-        node = PartialNode(tag.name, tag.start, tag.end, partialIndent);
+        node = PartialNode(tag.name, tag.start, tag.end, partialIndent, parentNode);
         break;
 
       case TagType.closeSection:

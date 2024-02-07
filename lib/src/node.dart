@@ -1,11 +1,12 @@
 abstract class Node {
-  Node(this.start, this.end);
+  Node(this.start, this.end, this.parentNode);
 
   // The offset of the start of the token in the file. Unless this is a section
   // or inverse section, then this stores the start of the content of the
   // section.
   final int start;
   final int end;
+  final Node parentNode;
 
   void accept(Visitor visitor);
   void visitChildren(Visitor visitor) {}
@@ -19,7 +20,7 @@ abstract class Visitor {
 }
 
 class TextNode extends Node {
-  TextNode(this.text, int start, int end) : super(start, end);
+  TextNode(this.text, int start, int end, Node parentNode) : super(start, end, parentNode);
 
   final String text;
 
@@ -36,13 +37,13 @@ class TextNode extends Node {
 }
 
 abstract class NamedNode extends Node{
-  NamedNode(int start, int end) : super(start, end);
+  NamedNode(int start, int end, Node parentNode) : super(start, end, parentNode);
   String get name;
 }
 
 class VariableNode extends NamedNode {
-  VariableNode(this.name, int start, int end, {this.escape = true})
-      : super(start, end);
+  VariableNode(this.name, int start, int end, Node parentNode, {this.escape = true})
+      : super(start, end, parentNode);
 
   final String name;
   final bool escape;
@@ -55,10 +56,10 @@ class VariableNode extends NamedNode {
 }
 
 class SectionNode extends NamedNode {
-  SectionNode(this.name, int start, int end, this.delimiters,
+  SectionNode(this.name, int start, int end, this.delimiters, Node parentNode,
       {this.inverse = false})
       : contentStart = end,
-        super(start, end);
+        super(start, end, parentNode);
 
   final String name;
   final String delimiters;
@@ -77,10 +78,12 @@ class SectionNode extends NamedNode {
 
   @override
   String toString() => '(SectionNode $name inverse: $inverse $start $end)';
+
+  Function onLeave;
 }
 
 class PartialNode extends NamedNode {
-  PartialNode(this.name, int start, int end, this.indent) : super(start, end);
+  PartialNode(this.name, int start, int end, this.indent, Node parentNode) : super(start, end, parentNode);
 
   final String name;
 

@@ -1,5 +1,6 @@
 import 'package:mustache_template/mustache.dart' as m;
 import 'lambda_context.dart';
+import 'lambda_result.dart';
 import 'node.dart';
 import 'template.dart';
 import 'template_exception.dart';
@@ -144,6 +145,10 @@ class Renderer extends Visitor {
       // Assume the value might have accessible member values via mirrors.
       _renderWithValue(node, value);
     }
+    if(node.onLeave != null){
+      node.onLeave();
+      node.onLeave = null;
+    }
   }
 
   void _renderInvSection(SectionNode node) {
@@ -177,6 +182,10 @@ class Renderer extends Visitor {
           'section: ${node.name}, '
           'type: ${value.runtimeType}.',
           node);
+    }
+    if(node.onLeave != null){
+      node.onLeave();
+      node.onLeave = null;
     }
   }
 
@@ -222,12 +231,18 @@ class Renderer extends Visitor {
     Object object = noSuchProperty;
     for (var o in _stack.reversed) {
       object = _getNamedProperty(o, parts[0]);
+      if (object is LambdaTerminationResult){
+        return object.value;
+      }
       if (object != noSuchProperty) {
         break;
       }
     }
     for (var i = 1; i < parts.length; i++) {
       object = getLambdaValue(node, object);
+      if (object is LambdaTerminationResult){
+        return object.value;
+      }
       if (object == noSuchProperty) {
         return noSuchProperty;
       }
