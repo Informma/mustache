@@ -36,8 +36,8 @@ class Renderer extends Visitor {
   final List _stack;
   final bool lenient;
   final bool htmlEscapeValues;
-  final m.PartialResolver? partialResolver;
-  final String? templateName;
+  final m.PartialResolver partialResolver;
+  final String templateName;
   final String indent;
   final String source;
 
@@ -83,11 +83,12 @@ class Renderer extends Visitor {
 
   @override
   void visitVariable(VariableNode node) {
-    var value = resolveValue(node.name);
+    var value = resolveNamedNodeValue(node);
+    // var value = resolveValue(node.name);
 
     if (value is Function) {
       var context = LambdaContext(node, this);
-      var valueFunction = value;
+      var valueFunction = value as Function;
       value = valueFunction(context);
       context.close();
     }
@@ -116,7 +117,7 @@ class Renderer extends Visitor {
 
   //TODO can probably combine Inv and Normal to shorten.
   void _renderSection(SectionNode node) {
-    var value = resolveValue(node.name);
+    var value = resolveNamedNodeValue(node);
 
     if (value == null) {
       // Do nothing.
@@ -190,7 +191,7 @@ class Renderer extends Visitor {
     var partialName = node.name;
     var template = partialResolver == null
         ? null
-        : (partialResolver!(partialName) as Template?);
+        : (partialResolver(partialName) as Template);
     if (template != null) {
       var renderer = Renderer.partial(this, template, node.indent);
       var nodes = getTemplateNodes(template);
@@ -202,14 +203,47 @@ class Renderer extends Visitor {
     }
   }
 
+  /// Given a returned value checks if it is a lambda and
+  /// returns the resolved lambda if it is or the original
+  /// object if it isn't
+  Object getLambdaValue(NamedNode node, Object object){
+    if(object is Function){
+      var context = LambdaContext(node, this);
+      var valueFunction = object as Function;
+      object = valueFunction(context);
+      context.close();
+    }
+    return object;
+  }
+
+  Object resolveNamedNodeValue(NamedNode node){
+    var name = node.name;
+    var parts = name.split('.');
+    Object object = noSuchProperty;
+    for (var o in _stack.reversed) {
+      object = _getNamedProperty(o, parts[0]);
+      if (object != noSuchProperty) {
+        break;
+      }
+    }
+    for (var i = 1; i < parts.length; i++) {
+      object = getLambdaValue(node, object);
+      if (object == noSuchProperty) {
+        return noSuchProperty;
+      }
+      object = _getNamedProperty(object, parts[i]);
+    }
+    return object;
+  }
+
   // Walks up the stack looking for the variable.
   // Handles dotted names of the form "a.b.c".
-  Object? resolveValue(String name) {
+  Object resolveValue(String name) {
     if (name == '.') {
       return _stack.last;
     }
     var parts = name.split('.');
-    Object? object = noSuchProperty;
+    Object object = noSuchProperty;
     for (var o in _stack.reversed) {
       object = _getNamedProperty(o, parts[0]);
       if (object != noSuchProperty) {
@@ -229,7 +263,7 @@ class Renderer extends Visitor {
   // which contains the key name, this is object[name]. For other
   // objects, this is object.name or object.name(). If no property
   // by the given name exists, this method returns noSuchProperty.
-  Object? _getNamedProperty(dynamic object, dynamic name) {
+  Object _getNamedProperty(dynamic object, dynamic name) {
     if (object is Map && object.containsKey(name)) return object[name];
 
     if (object is List && _integerTag.hasMatch(name)) {

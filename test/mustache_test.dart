@@ -1,5 +1,7 @@
 library mustache_test;
 
+import 'dart:developer';
+
 import 'package:mustache_template/mustache.dart';
 import 'package:test/test.dart';
 
@@ -450,7 +452,7 @@ void main() {
             name: k, lenient: lenient, partialResolver: resolver);
       }
       var t = resolver(renderTemplate);
-      return t!.renderString(values);
+      return t.renderString(values);
     }
 
     test('basic', () {
@@ -624,6 +626,59 @@ void main() {
       t.renderString({'foo': (lc) => lc2 = lc, 'bar': 'jim'});
       expect(() => lc2.lookup('foo'), throwsException);
     });
+
+    test('Lambda with dots', (){
+      var t = Template('* {{time.hour}}\n* {{today}}');
+      var ctx = {
+        "year": 1970,
+        "month": 1,
+        "day": 1,
+        "time": (_) {
+          return {
+            "hour": 0,
+            "minute": 0,
+            "second": 0
+          };
+        },
+        "today": (lc) {
+          return "${lc.lookup('year')}-${lc.lookup('month')}-${lc.lookup('day')}";
+        }
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals("* 0\n* 1970-1-1"));
+    });
+
+    test('Section Lambda with dots', (){
+      var t = Template('{{#section.values}}{{name}}\n{{/section.values}}');
+      var ctx = {
+        "section": (_){
+          return {
+            'values' : [
+              { "name": "resque" },
+              { "name": "hub" },
+              { "name": "rip" }
+            ]
+          };
+        },
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals("resque\nhub\nrip\n"));
+    });
+
+    test('Section Lambda with identity', (){
+      var t = Template('{{#links.other name}}{{name}}\n{{/links.other name}}', lenient: true);
+      var ctx = {
+        "links": (LambdaContext ctx){
+          return {ctx.name.split('.').last : [
+            { "name": "resque" },
+            { "name": "hub" },
+            { "name": ctx.name.split('.').last }
+          ]};
+        },
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals("resque\nhub\nother name\n"));
+    });
   });
 
   group('Other', () {
@@ -748,7 +803,7 @@ dynamic renderFail(source, values) {
   }
 }
 
-void expectFail(ex, int? line, int? column, [String? msgStartsWith]) {
+void expectFail(ex, int line, int column, [String msgStartsWith]) {
   expect(ex is TemplateException, isTrue);
   if (line != null) expect(ex.line, equals(line));
   if (column != null) expect(ex.column, equals(column));

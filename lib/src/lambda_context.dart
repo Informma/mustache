@@ -7,7 +7,7 @@ import 'template_exception.dart';
 
 /// Passed as an argument to a mustache lambda function.
 class LambdaContext implements m.LambdaContext {
-  final Node _node;
+  final NamedNode _node;
   final Renderer _renderer;
   bool _closed = false;
 
@@ -27,7 +27,7 @@ class LambdaContext implements m.LambdaContext {
   }
 
   @override
-  String renderString({Object? value}) {
+  String renderString({Object value}) {
     _checkClosed();
     if (_node is! SectionNode) {
       _error(
@@ -38,7 +38,7 @@ class LambdaContext implements m.LambdaContext {
     return sink.toString();
   }
 
-  void _renderSubtree(StringSink sink, Object? value) {
+  void _renderSubtree(StringSink sink, Object value) {
     var renderer = Renderer.subtree(_renderer, sink);
     var section = _node as SectionNode;
     if (value != null) renderer.push(value);
@@ -46,7 +46,7 @@ class LambdaContext implements m.LambdaContext {
   }
 
   @override
-  void render({Object? value}) {
+  void render({Object value}) {
     _checkClosed();
     if (_node is! SectionNode) {
       _error('LambdaContext.render() can only be called on section tags.');
@@ -78,7 +78,7 @@ class LambdaContext implements m.LambdaContext {
   }
 
   @override
-  String renderSource(String source, {Object? value}) {
+  String renderSource(String source, {Object value}) {
     _checkClosed();
     var sink = StringBuffer();
 
@@ -102,8 +102,11 @@ class LambdaContext implements m.LambdaContext {
   }
 
   @override
-  Object? lookup(String variableName) {
+  Object lookup(String variableName) {
     _checkClosed();
     return _renderer.resolveValue(variableName);
   }
+
+  @override
+  String get name => _node.name;
 }

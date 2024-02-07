@@ -35,7 +35,12 @@ class TextNode extends Node {
   void accept(Visitor visitor) => visitor.visitText(this);
 }
 
-class VariableNode extends Node {
+abstract class NamedNode extends Node{
+  NamedNode(int start, int end) : super(start, end);
+  String get name;
+}
+
+class VariableNode extends NamedNode {
   VariableNode(this.name, int start, int end, {this.escape = true})
       : super(start, end);
 
@@ -49,7 +54,7 @@ class VariableNode extends Node {
   String toString() => '(VariableNode "$name" escape: $escape $start $end)';
 }
 
-class SectionNode extends Node {
+class SectionNode extends NamedNode {
   SectionNode(this.name, int start, int end, this.delimiters,
       {this.inverse = false})
       : contentStart = end,
@@ -59,7 +64,7 @@ class SectionNode extends Node {
   final String delimiters;
   final bool inverse;
   final int contentStart;
-  int? contentEnd; // Set in parser when close tag is parsed.
+  int contentEnd; // Set in parser when close tag is parsed.
   final List<Node> children = <Node>[];
 
   @override
@@ -74,7 +79,7 @@ class SectionNode extends Node {
   String toString() => '(SectionNode $name inverse: $inverse $start $end)';
 }
 
-class PartialNode extends Node {
+class PartialNode extends NamedNode {
   PartialNode(this.name, int start, int end, this.indent) : super(start, end);
 
   final String name;
