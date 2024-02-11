@@ -33,6 +33,8 @@ abstract class Template {
 typedef PartialResolver = Template Function(String);
 
 typedef LambdaFunction = Object Function(LambdaContext context);
+typedef LambdaOnLeaveFunction = void Function();
+
 
 /// Passed as an argument to a mustache lambda function. The methods on
 /// this object may only be called before the lambda function returns. If a
@@ -65,7 +67,7 @@ abstract class LambdaContext {
   String get name;
 
   /// Adds an onLeave function to a section node
-  set onLeave(Function onLeave);
+  set onLeave(LambdaOnLeaveFunction onLeave);
 }
 
 /// [TemplateException] is used to obtain the line and column numbers

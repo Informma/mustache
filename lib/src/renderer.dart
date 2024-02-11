@@ -123,7 +123,9 @@ class Renderer extends Visitor {
     if (value == null) {
       // Do nothing.
 
-    } else if (value is Iterable) {
+    } else if(value is String){
+      write(value);
+    }else if (value is Iterable) {
       value.forEach((v) => _renderWithValue(node, v));
     } else if (value is Map) {
       _renderWithValue(node, value);
@@ -146,7 +148,8 @@ class Renderer extends Visitor {
       _renderWithValue(node, value);
     }
     if(node.onLeave != null){
-      node.onLeave();
+      var onLeave = node.onLeave;
+      onLeave();
       node.onLeave = null;
     }
   }
@@ -248,7 +251,11 @@ class Renderer extends Visitor {
       }
       object = _getNamedProperty(object, parts[i]);
     }
-    return object;
+    var result = getLambdaValue(node, object);
+    if(result is LambdaTerminationResult){
+      return result.value;
+    }
+    return result;
   }
 
   // Walks up the stack looking for the variable.

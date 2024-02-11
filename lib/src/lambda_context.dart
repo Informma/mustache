@@ -111,7 +111,7 @@ class LambdaContext implements m.LambdaContext {
   String get name => _node.name;
 
   @override
-  set onLeave(Function onLeave) {
+  set onLeave(m.LambdaOnLeaveFunction onLeave) {
     if(_node is SectionNode){
       (_node as SectionNode).onLeave = onLeave;
     }

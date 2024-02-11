@@ -1,3 +1,5 @@
+import '../mustache.dart';
+
 abstract class Node {
   Node(this.start, this.end, this.parentNode);
 
@@ -79,7 +81,7 @@ class SectionNode extends NamedNode {
   @override
   String toString() => '(SectionNode $name inverse: $inverse $start $end)';
 
-  Function onLeave;
+  LambdaOnLeaveFunction onLeave;
 }
 
 class PartialNode extends NamedNode {
