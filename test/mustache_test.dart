@@ -841,6 +841,57 @@ void main() {
 
 
   });
+
+  group('Test array accessor', (){
+    test('array accessor valid', (){
+      var t = Template('{{array.0}}');
+      var ctx = {
+        'array' : [
+          'one',
+          'two',
+          'three'
+        ]
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals('one'));
+    });
+    test('array accessor invalid', (){
+      var t = Template('{{array.3}}');
+      var ctx = {
+        'array' : [
+          'one',
+          'two',
+          'three'
+        ]
+      };
+      expect(() => t.renderString(ctx), throwsA(isA<TemplateException>()));
+    });
+    test('array accessor invalid lenient', (){
+      var t = Template('{{array.3}}', lenient: true);
+      var ctx = {
+        'array' : [
+          'one',
+          'two',
+          'three'
+        ]
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals(''));
+    });
+    test('array accessor valid to current context', (){
+      var t = Template('{{#array.1}}{{.}}{{/array.1}}', lenient: true);
+      var ctx = {
+        'array' : [
+          'one',
+          'two',
+          'three'
+        ]
+      };
+      var result = t.renderString(ctx);
+      expect(result, equals('two'));
+    });
+
+  });
 }
 
 dynamic renderFail(source, values) {
